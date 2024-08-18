@@ -1,0 +1,6 @@
+"UnlitGeneric"
+{
+	"$basetexture" "vgui/entities/personal_spawn_pad_swep"
+	"$vertexalpha" 1
+	"$vertexcolor" 1
+}
