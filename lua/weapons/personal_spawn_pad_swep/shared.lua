@@ -76,140 +76,132 @@ SWEP.Next = CurTime()
 SWEP.Primed = 0
 
 function SWEP:Deploy()
-	self:SetNW2String("CanMelee", true)
 	self.Next = CurTime()
 	self.Primed = 0
-	self:SetNW2String("HasUsed", "false")
-	self.Owner.Pads = self.Owner.Pads or {}
+
+	local owner = self:GetOwner()
+	owner.Pads = owner.Pads or {}
+
+	return true
 end
 
-function SWEP:Equip(NewOwner)
-end
+function SWEP:Equip()
 
-if SERVER then
-	util.AddNetworkString("SpawnpadMsg")
 end
 
 function SWEP:PrimaryAttack()
-	if SERVER and self.Owner:IsValid() and self.Owner.BuildMode and self.Next < CurTime() then
-		net.Start("SpawnpadMsg")
-		net.Send(self.Owner)
+	local owner = self:GetOwner()
+	local curtime = CurTime()
+	local selfnext = self.Next
 
-		self.Next = CurTime() + 1
+	if SERVER and IsValid(owner) and owner.BuildMode and selfnext < curtime then
+		selfnext = curtime + 1
+		self.Next = selfnext
 		
 		return
 	end
 
-	if self:GetNW2String("clickclick") == "true" then
-		return
-	end
-	self:SetNW2String("clickclick", "true")
+	if self.Used then return end
+	self.Used = true
 
-	if self.Next < CurTime() and self.Primed == 0 then
-		self.Next = CurTime() + self.Primary.Delay
+	if selfnext < curtime and self.Primed == 0 then
+		self.Next = curtime + self.Primary.Delay
 
-		if self.Owner:IsValid() and self.Owner:Alive() then
-            timer.Simple(0.0,function() if self:IsValid() then self:EmitSound("npc/turret_floor/click1.wav",55,math.random( 100, 105 )) end end)
-            timer.Simple(0.2,function() if self:IsValid() then self:EmitSound("garrysmod/ui_click.wav",100,math.random( 120, 150 )) end end)
-            timer.Simple(0.4,function() if self:IsValid() then self:EmitSound("garrysmod/ui_click.wav",100,math.random( 120, 150 )) end end)
-            timer.Simple(0.6,function() if self:IsValid() then self:EmitSound("garrysmod/ui_click.wav",100,math.random( 120, 150 )) end end)
-            timer.Simple(0.8,function() if self:IsValid() then self:EmitSound("buttons/lever7.wav",55,math.random( 100, 105 )) end end)
+		if IsValid(owner) and owner:Alive() then
+            timer.Simple(0.0, function() if IsValid(self) then self:EmitSound("npc/turret_floor/click1.wav", 55, math.random(100, 105)) end end)
+            timer.Simple(0.2, function() if IsValid(self) then self:EmitSound("garrysmod/ui_click.wav", 100, math.random(120, 150)) end end)
+            timer.Simple(0.4, function() if IsValid(self) then self:EmitSound("garrysmod/ui_click.wav", 100, math.random(120, 150)) end end)
+            timer.Simple(0.6, function() if IsValid(self) then self:EmitSound("garrysmod/ui_click.wav", 100, math.random(120, 150)) end end)
+            timer.Simple(0.8, function() if IsValid(self) then self:EmitSound("buttons/lever7.wav", 55, math.random(100, 105)) end end)
 
-			self.Weapon:SendWeaponAnim(ACT_VM_PULLPIN)
+			self:SendWeaponAnim(ACT_VM_PULLPIN)
 			self.Primed = 1
 		end
 	end
 end
 
+local angle_offset = Angle(0, -90, 0)
+
 function SWEP:DeployShield()
-	timer.Simple(
-		0.5,
-		function()
-			if self.Owner:Alive() and self.Owner:IsValid() then
-				local Owner = self.Owner
-				if SERVER then
-					if IsValid(self.Weapon) then
-						self.Weapon:Remove() --remove the weapon (its on the floor now)
-					end
-					for k, v in pairs(Owner.Pads) do
-						timer.Simple(
-							0.1 * k,
-							function()
-								if IsValid(v) then
-									v:Remove() --remove the old spawn pad
-								end
-								table.remove(Owner.Pads, k)
-							end
-						)
-					end
-				end
-			end
-			if SERVER then
-				local ent = ents.Create("personal_spawn_pad")
-				ent:SetPos(self.Owner:GetPos())
-				ent:Spawn()
-				ent.SpawnPadOwner = self.Owner
-				ent.Owner = self.Owner
-				ent:SetNW2String("SpawnPadOwner", self.Owner:Nick())
-				ent:SetAngles(
-					Angle(self.Owner:GetAngles().x, self.Owner:GetAngles().y, self.Owner:GetAngles().z) +
-						Angle(0, -90, 0)
-				)
-				table.insert(self.Owner.Pads, ent)
-			end
-		end
-	)
+	timer.Simple(0.5, function()
+		local owner = self:GetOwner()
 
-	hook.Add(
-		"PlayerSpawn",
-		"SpawnPadSpawner",
-		function(ply)
+		if IsValid(owner) and owner:Alive() then
+			local Owner = owner
+
 			if SERVER then
-				if ply.Pads == nil then
-					ply.Pads = {}
-				end
-				for k, v in pairs(ply.Pads) do
-					timer.Simple(
-						0 * k,
-						function()
-							if IsValid(v) then
-								ply:SetPos(v:GetPos())
-								ply:SetAngles(v:GetAngles())
-							end
+				self:Remove()
+	
+				for k, v in pairs(Owner.Pads) do
+					timer.Simple(0.1 * k, function()
+						if IsValid(v) then
+							v:Remove()
 						end
-					)
+	
+						table.remove(Owner.Pads, k)
+					end)
 				end
 			end
 		end
-	)
+	
+		if SERVER then
+			local ent = ents.Create("personal_spawn_pad")
+			ent:SetPos(owner:GetPos())
+			ent.SpawnPadOwner = owner
+			ent:Spawn()
 
+			local ang = Angle(owner:GetAngles())
+			ang:Add(angle_offset)
+			ent:SetAngles(ang)
 
+			table.insert(owner.Pads, ent)
+		end
+	end)
 end
 
-function SWEP:SetNext()
-	if self.Next < CurTime() + 0.5 then
-		return
-	end
-	self:SetNW2String("HasUsed", "true")
-	self.Next = CurTime()
+if SERVER then
+	hook.Add("PlayerSpawn", "SpawnPadSpawner", function(ply)
+		if ply.Pads == nil then
+			ply.Pads = {}
+		end
+
+		for _,v in pairs(ply.Pads) do
+			timer.Simple(0, function()
+				if IsValid(v) then
+					ply:SetPos(v:GetPos())
+					ply:SetAngles(v:GetAngles())
+				end
+			end)
+		end
+	end)
 end
 
 function SWEP:Think()
-	if self.Next < CurTime() then
-		if self.Primed == 1 and not self.Owner:KeyDown(IN_ATTACK) then
+	local selfnext = self.Next
+	local curtime = CurTime()
+
+	if selfnext < curtime then
+		local primed = self.Primed
+
+		if primed == 1 and not self:GetOwner():KeyDown(IN_ATTACK) then
 			self.Primed = 2
-			self:SetNext()
-		elseif self.Primed == 2 and CurTime() > self.Next + 0.5 then
+
+			if selfnext > curtime + 0.5 then
+				self.Next = curtime
+			end
+		elseif primed == 2 and curtime > selfnext + 0.5 then
 			self.Primed = 0
 			self:DeployShield()
-			self.Weapon:SendWeaponAnim(ACT_VM_THROW)
+			self:SendWeaponAnim(ACT_VM_THROW)
 		end
 	end
 end
 
 function SWEP:SecondaryAttack()
-	self:SetNextPrimaryFire(CurTime() + 1.1)
-	self:SetNextSecondaryFire(CurTime() + 1.2)
+	local curtime = CurTime()
+
+	self:SetNextPrimaryFire(curtime + 1.1)
+	self:SetNextSecondaryFire(curtime + 1.2)
 end
 
 function SWEP:ShouldDropOnDie()
@@ -251,12 +243,17 @@ function SWEP:Initialize()
 end
 
 function SWEP:Holster()
-	if CLIENT and IsValid(self.Owner) then
-		self.Next = CurTime() --outside? x2
-		self.Primed = 0
-		local vm = self.Owner:GetViewModel()
-		if IsValid(vm) then
-			self:ResetBonePositions(vm)
+	if CLIENT then
+		local owner = self:GetOwner()
+
+		if IsValid(owner) then
+			self.Next = CurTime()
+			self.Primed = 0
+
+			local viewmodel = owner:GetViewModel()
+			if IsValid(viewmodel) then
+				self:ResetBonePositions(viewmodel)
+			end
 		end
 	end
 

@@ -2,21 +2,6 @@ AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 include("shared.lua")
 
-function ENT:SpawnFunction(ply, tr)
-	if not tr.Hit then return end
-
-	local spawnpos = tr.HitPos + tr.HitNormal * 16
-
-	local ent = ents.Create("personal_spawn_pad")
-
-	ent:SetPos(spawnpos)
-	ent:Spawn()
-	ent:Activate()
-	ent:GetOwner(self.SpawnPadOwner)
-
-	return ent
-end
-
 function ENT:Initialize()
 	local selftable = self:GetTable()
 	local selfentity = selftable.Entity
@@ -31,6 +16,12 @@ function ENT:Initialize()
 	selfentity:SetHealth(5)
 
 	selftable.HealthAmnt = 75
+
+	local owner = self.SpawnPadOwner
+	if not IsValid(owner) then self:Remove() return end
+
+	gamemode.Call("PlayerSpawnedSENT", owner, self)
+	owner:AddCleanup("sents", self)
 end
 
 local zapsound = Sound("npc/assassin/ball_zap1.wav")
