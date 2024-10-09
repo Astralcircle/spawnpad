@@ -10,4 +10,8 @@ if SERVER then
 	ENT.DoNotDuplicate = true
 end
 
+function ENT:CanProperty()
+	return false
+end
+
 ENT.PhysgunDisabled = true
