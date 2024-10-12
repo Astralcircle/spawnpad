@@ -124,27 +124,24 @@ local angle_offset = Angle(0, -90, 0)
 
 function SWEP:DeployShield()
 	timer.Simple(0.5, function()
+		if not IsValid(self) then return end
+
 		local owner = self:GetOwner()
+		if not IsValid(owner) and owner:Alive() then return end
 
-		if IsValid(owner) and owner:Alive() then
-			local Owner = owner
-
-			if SERVER then
-				self:Remove()
-	
-				for k, v in pairs(Owner.Pads) do
-					timer.Simple(0.1 * k, function()
-						if IsValid(v) then
-							v:Remove()
-						end
-	
-						table.remove(Owner.Pads, k)
-					end)
-				end
-			end
-		end
-	
 		if SERVER then
+			self:Remove()
+
+			for k, v in pairs(owner.Pads) do
+				timer.Simple(0.1 * k, function()
+					if IsValid(v) then
+						v:Remove()
+					end
+
+					table.remove(owner.Pads, k)
+				end)
+			end
+			
 			local ent = ents.Create("personal_spawn_pad")
 			ent:SetPos(owner:GetPos())
 			ent.SpawnPadOwner = owner
