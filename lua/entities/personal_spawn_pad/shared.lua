@@ -14,4 +14,10 @@ function ENT:CanProperty()
 	return false
 end
 
+function ENT:CanTool(ply, trace, mode, tool, button)
+	if mode == "remover" then return true end
+
+	return false
+end
+
 ENT.PhysgunDisabled = true
