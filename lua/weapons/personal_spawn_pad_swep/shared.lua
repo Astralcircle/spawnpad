@@ -97,6 +97,8 @@ function SWEP:PrimaryAttack()
 	if SERVER and IsValid(owner) and owner.BuildMode and selfnext < curtime then
 		selfnext = curtime + 1
 		self.Next = selfnext
+
+		owner:ChatPrint("Вы не можете использовать спавнпады в билд-моде!")
 		
 		return
 	end
