@@ -53,7 +53,7 @@ end
 
 function ENT:Use(activator, caller)	
 	timer.Simple(0.2, function() 
-		if IsValid(activator) and activator == self.SpawnPadOwner then
+		if IsValid(self) and IsValid(activator) and activator == self.SpawnPadOwner then
 			activator:Give("personal_spawn_pad_swep")
 
 			sound.Play(pickupsound, self:GetPos(), 100, math.random(120, 150))
